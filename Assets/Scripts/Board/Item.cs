@@ -8,7 +8,7 @@ using DG.Tweening;
 public class Item
 {
     public Cell Cell { get; private set; }
-
+    public Cell OriginalCell{get; set;}
     public Transform View { get; private set; }
 
 

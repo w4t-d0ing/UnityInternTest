@@ -8,7 +8,7 @@ public class Cell : MonoBehaviour
     public int BoardY { get; private set; }
 
     public Item Item { get; private set; }
-
+    
     public Cell NeighbourUp { get; set; }
 
     public Cell NeighbourRight { get; set; }
@@ -18,6 +18,7 @@ public class Cell : MonoBehaviour
     public Cell NeighbourLeft { get; set; }
 
 
+    public bool IsContainerCell { get; set; }
     public bool IsEmpty => Item == null;
 
     public void Setup(int cellX, int cellY)

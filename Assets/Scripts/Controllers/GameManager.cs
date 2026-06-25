@@ -10,8 +10,10 @@ public class GameManager : MonoBehaviour
 
     public enum eLevelMode
     {
-        TIMER,
-        MOVES
+        TIME_ATTACK,
+        NORMAL,
+        AUTO_WIN,
+        AUTO_LOSE
     }
 
     public enum eStateGame
@@ -21,8 +23,10 @@ public class GameManager : MonoBehaviour
         GAME_STARTED,
         PAUSE,
         GAME_OVER,
+        WIN,
+        LOSE
     }
-
+    public eLevelMode CurrentMode { get; private set; }
     private eStateGame m_state;
     public eStateGame State
     {
@@ -35,22 +39,25 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public BoardController BoardController => m_boardController;
+    public float TimeAttackTimerValue => m_timeAttackTimer;
 
     private GameSettings m_gameSettings;
-
+    private ContainerSettings m_containerSettings;
 
     private BoardController m_boardController;
+    private ContainerManager m_containerManager;
 
     private UIMainManager m_uiMenu;
 
-    private LevelCondition m_levelCondition;
+    // private LevelCondition m_levelCondition;
+
+    private float m_timeAttackTimer;
 
     private void Awake()
     {
         State = eStateGame.SETUP;
-
         m_gameSettings = Resources.Load<GameSettings>(Constants.GAME_SETTINGS_PATH);
-
         m_uiMenu = FindObjectOfType<UIMainManager>();
         m_uiMenu.Setup(this);
     }
@@ -64,14 +71,25 @@ public class GameManager : MonoBehaviour
     void Update()
     {
         if (m_boardController != null) m_boardController.Update();
+
+        if (State == eStateGame.GAME_STARTED && CurrentMode == eLevelMode.TIME_ATTACK)
+        {
+            m_timeAttackTimer -= Time.deltaTime;
+            
+            // Optional: You can link m_timeAttackTimer to a UI Text element here!
+            
+            if (m_timeAttackTimer <= 0)
+            {
+                OnLose();
+            }
+        }
     }
 
 
     internal void SetState(eStateGame state)
     {
         State = state;
-
-        if(State == eStateGame.PAUSE)
+        if (State == eStateGame.PAUSE)
         {
             DOTween.PauseAll();
         }
@@ -83,25 +101,56 @@ public class GameManager : MonoBehaviour
 
     public void LoadLevel(eLevelMode mode)
     {
+        CurrentMode = mode;
+
+        if (CurrentMode == eLevelMode.TIME_ATTACK) m_timeAttackTimer = 60f;
+
         m_boardController = new GameObject("BoardController").AddComponent<BoardController>();
-        m_boardController.StartGame(this, m_gameSettings);
+        Debug.Log("Current Mode: " + mode);
+        m_boardController.StartGame(this, m_gameSettings, mode);
 
-        if (mode == eLevelMode.MOVES)
-        {
-            m_levelCondition = this.gameObject.AddComponent<LevelMoves>();
-            m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), m_boardController);
-        }
-        else if (mode == eLevelMode.TIMER)
-        {
-            m_levelCondition = this.gameObject.AddComponent<LevelTime>();
-            m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), this);
-        }
+        m_containerManager = new GameObject("ContainerManager").AddComponent<ContainerManager>();
+        m_containerManager.StartGame(this, m_gameSettings);
 
-        m_levelCondition.ConditionCompleteEvent += GameOver;
+        m_boardController.SetUpContainerManager(m_containerManager);
 
         State = eStateGame.GAME_STARTED;
+        #region Old LoadLevel Codes
+        // if (mode == eLevelMode.MOVES)
+        // {
+        //     m_levelCondition = this.gameObject.AddComponent<LevelMoves>();
+        //     m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), m_boardController);
+        // }
+        // else if (mode == eLevelMode.TIMER)
+        // {
+        //     m_levelCondition = this.gameObject.AddComponent<LevelTime>();
+        //     m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), this);
+        // }
+
+        // m_levelCondition.ConditionCompleteEvent += GameOver;
+        #endregion
     }
 
+    public void OnWin()
+    {
+        if (State != eStateGame.GAME_STARTED) return;
+
+        Debug.Log("Victory! The board is clear.");
+        State = eStateGame.WIN;
+
+        StartCoroutine(WaitBoardController());
+    }
+
+
+    public void OnLose()
+    {
+        if (State != eStateGame.GAME_STARTED) return;
+
+        Debug.Log("Defeat! The container is full.");
+        State = eStateGame.LOSE;
+
+        StartCoroutine(WaitBoardController());
+    }
     public void GameOver()
     {
         StartCoroutine(WaitBoardController());
@@ -109,11 +158,20 @@ public class GameManager : MonoBehaviour
 
     internal void ClearLevel()
     {
+        StopAllCoroutines();
+
         if (m_boardController)
         {
             m_boardController.Clear();
             Destroy(m_boardController.gameObject);
             m_boardController = null;
+        }
+
+        if (m_containerManager)
+        {
+            m_containerManager.Clear();
+            Destroy(m_containerManager.gameObject);
+            m_containerManager = null;
         }
     }
 
@@ -128,12 +186,12 @@ public class GameManager : MonoBehaviour
 
         State = eStateGame.GAME_OVER;
 
-        if (m_levelCondition != null)
-        {
-            m_levelCondition.ConditionCompleteEvent -= GameOver;
+        // if (m_levelCondition != null)
+        // {
+        //     m_levelCondition.ConditionCompleteEvent -= GameOver;
 
-            Destroy(m_levelCondition);
-            m_levelCondition = null;
-        }
+        //     Destroy(m_levelCondition);
+        //     m_levelCondition = null;
+        // }
     }
 }

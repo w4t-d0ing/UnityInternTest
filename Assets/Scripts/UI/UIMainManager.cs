@@ -7,10 +7,14 @@ using UnityEngine.UI;
 
 public class UIMainManager : MonoBehaviour
 {
+    [SerializeField] private GameObject WinPanel;
+    [SerializeField] private GameObject LosePanel;
     private IMenu[] m_menuList;
 
     private GameManager m_gameManager;
 
+
+    public GameManager GameManager => m_gameManager;
     private void Awake()
     {
         m_menuList = GetComponentsInChildren<IMenu>(true);
@@ -66,9 +70,17 @@ public class UIMainManager : MonoBehaviour
             case GameManager.eStateGame.PAUSE:
                 ShowMenu<UIPanelPause>();
                 break;
-            case GameManager.eStateGame.GAME_OVER:
-                ShowMenu<UIPanelGameOver>();
+            case GameManager.eStateGame.WIN:
+                HideAllMenus();
+                if (WinPanel) WinPanel.SetActive(true);
                 break;
+            case GameManager.eStateGame.LOSE:
+                HideAllMenus();
+                if (LosePanel) LosePanel.SetActive(true);
+                break;
+            // case GameManager.eStateGame.GAME_OVER:
+            //     ShowMenu<UIPanelGameOver>();
+            //     break;
         }
     }
 
@@ -77,43 +89,56 @@ public class UIMainManager : MonoBehaviour
         for (int i = 0; i < m_menuList.Length; i++)
         {
             IMenu menu = m_menuList[i];
-            if(menu is T)
+            if (menu is T)
             {
                 menu.Show();
             }
             else
             {
                 menu.Hide();
-            }            
+            }
         }
     }
 
-    internal Text GetLevelConditionView()
+    private void HideAllMenus()
     {
-        UIPanelGame game = m_menuList.Where(x => x is UIPanelGame).Cast<UIPanelGame>().FirstOrDefault();
-        if (game)
+        for (int i = 0; i < m_menuList.Length; i++)
         {
-            return game.LevelConditionView;
+            m_menuList[i].Hide();
         }
-
-        return null;
     }
+
+    // internal Text GetLevelConditionView()
+    // {
+    //     UIPanelGame game = m_menuList.Where(x => x is UIPanelGame).Cast<UIPanelGame>().FirstOrDefault();
+    //     if (game)
+    //     {
+    //         return game.LevelConditionView;
+    //     }
+
+    //     return null;
+    // }
 
     internal void ShowPauseMenu()
     {
         m_gameManager.SetState(GameManager.eStateGame.PAUSE);
     }
 
-    internal void LoadLevelMoves()
-    {
-        m_gameManager.LoadLevel(GameManager.eLevelMode.MOVES);
-    }
+    // internal void LoadLevelMoves()
+    // {
+    //     m_gameManager.LoadLevel(GameManager.eLevelMode.MOVES);
+    // }
 
-    internal void LoadLevelTimer()
-    {
-        m_gameManager.LoadLevel(GameManager.eLevelMode.TIMER);
-    }
+    // internal void LoadLevelTimer()
+    // {
+    //     m_gameManager.LoadLevel(GameManager.eLevelMode.TIMER);
+    // }
 
+    internal void StartLevel(GameManager.eLevelMode mode)
+    {
+        m_gameManager.LoadLevel(mode);
+    }
+    
     internal void ShowGameMenu()
     {
         m_gameManager.SetState(GameManager.eStateGame.GAME_STARTED);

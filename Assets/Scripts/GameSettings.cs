@@ -15,4 +15,7 @@ public class GameSettings : ScriptableObject
     public float LevelTime = 30f;
 
     public float TimeForHint = 5f;
+
+    public ContainerSettings ContainerSettings = new ContainerSettings { Capacity = 5, Match_Min = 3 };
+    public Vector3 ContainerStartPos = new Vector3(-2, -4, 0);
 }
